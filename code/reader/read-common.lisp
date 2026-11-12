@@ -67,7 +67,7 @@
   (let ((char (read-char input-stream eof-error-p)))
     (when (null char)
       (return-from %read-maybe-nothing (values eof-value :eof)))
-    (let ((readtable (state-value client 'cl:*readtable*)))
+    (let ((readtable (state-value/readtable client)))
       (case (eclector.readtable:syntax-type readtable char)
         (:whitespace
          (skip-whitespace* input-stream readtable)
@@ -88,7 +88,7 @@
                   (values nil :skip))
                  ;; This case takes care of reader macro not returning
                  ;; nil when *READ-SUPPRESS* is true.
-                 ((state-value client '*read-suppress*)
+                 ((state-value/read-suppress client)
                   (note-skipped-input client input-stream
                                       (or *skip-reason* '*read-suppress*))
                   (values nil :suppress))
@@ -106,7 +106,7 @@
                   (note-skipped-input client input-stream 'recover)
                   (values nil :skip))
                  (t
-                  (values object (if (state-value client '*read-suppress*)
+                  (values object (if (state-value/read-suppress client)
                                      :suppress
                                      :object))))))))))
 

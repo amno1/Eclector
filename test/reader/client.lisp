@@ -525,3 +525,21 @@
     (with-input-from-string (stream "xxy")
       (is (eql #\y (eclector.reader:peek-char t stream)))
       (is (eql 2 (file-position stream))))))
+
+(test read-maybe-nothing/client-readtable
+  "READ-MAYBE-NOTHING uses the readtable of the client."
+  (let ((eclector.base:*client*
+          (make-instance 'override-client
+                         :readtable (make-x-whitespace-readtable))))
+    (is (eq 'a (eclector.reader:read-from-string "x a")))))
+
+(test read-maybe-nothing/client-suppress
+  "READ-MAYBE-NOTHING uses the value of *READ-SUPPRESS* of the client."
+  (let ((client (make-instance 'override-client :suppress t)))
+    (let ((eclector.base:*client* client))
+      (is (null (eclector.reader:read-from-string "(a b)"))))
+    (with-input-from-string (stream "foo")
+      (multiple-value-bind (object what)
+          (eclector.reader:read-maybe-nothing client stream t nil)
+        (is (null object))
+        (is (eq :suppress what))))))
