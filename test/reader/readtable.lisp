@@ -94,7 +94,7 @@
       " x" #\x 1)
      ;; Change syntax of a #\Space
      (,(lambda (readtable)
-         (setf (eclector.readtable:syntax-from-char #\Space readtable readtable)
+         (setf (eclector.readtable:syntax-type readtable #\Space)
                :single-escape)
          readtable)
       " x" #\Space 0))))
