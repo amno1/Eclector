@@ -181,6 +181,17 @@ presence of custom reader macros that bypass some reader functionality."
     (is (equal* (eclector.reader:read-from-string input) (cst:raw result)))
     (values result (reconstructions client))))
 
+(test wrapper-forms/no-reconstruction
+  "Wrapper forms must not need heuristic reconstruction of CSTs."
+  (dolist (input '("'x" "#'x" "`x" "`,x" "`(,@x)" "'(a b)" "'(quote . x)"
+                       "'quote" "'(quote x)"))
+    (multiple-value-bind (result reconstructions)
+        (read-counting-reconstructions input)
+      (declare (ignore result))
+      (is (eql 0 reconstructions)
+          "~@<For input ~S, ~D calls to RECONSTRUCT were made.~@:>"
+          input reconstructions))))
+
 (test wrapper-forms/structure
   "Check the CST for a wrapper form."
   (let* ((result (read-counting-reconstructions "'x"))
@@ -192,10 +203,18 @@ presence of custom reader macros that bypass some reader functionality."
     (is (null (cst:raw (cst:rest rest))))))
 
 (test wrapper-forms/fallback
-  "Forms that are not wrapper forms still use reconstruction."
-  (dolist (input '("(a b . c)" "'quote"))
+  "Dotted lists with more than one element before the dot still use
+  reconstruction."
+  (dolist (input '("(a b . c)"))
     (multiple-value-bind (result reconstructions)
         (read-counting-reconstructions input)
       (declare (ignore result))
       (is (plusp reconstructions)
           "~@<For input ~S, RECONSTRUCT was not called.~@:>" input))))
+
+(test wrapper-forms/operator-source
+  "The operator of a wrapper form has no source, even if it is in the argument."
+  (let* ((result (read-counting-reconstructions "'(quote x)"))
+         (argument (cst:first (cst:rest result))))
+    (is (null (cst:source (cst:first result))))
+    (is (equal '(2 . 7) (cst:source (cst:first argument))))))

@@ -91,6 +91,27 @@
                                         :first (first children)
                                         :rest (third children)
                                         :source source))
+          ;; EXPRESSION is a list (OP X), as produced by reading 'X, #'X
+          ;; or `X, such that CHILDREN consists of the CST for X only. OP
+          ;; has no counterpart in the input, so its CST has no source.
+          ;; Unlike reconstruction, which may use a CST from CHILDREN with
+          ;; the same raw value for OP and shares the CST for the final
+          ;; NIL with other lists, this always makes new CSTs for OP and
+          ;; for the final NIL, like the case for lists above.
+          ((and (= 1 children-length)
+                (consp (cdr expression))
+                (null (cddr expression))
+                (eql (second expression) (cst:raw (first children))))
+           (make-instance 'cst:cons-cst
+                          :raw expression
+                          :first (make-instance 'cst:atom-cst
+                                                :raw (first expression))
+                          :rest (make-instance 'cst:cons-cst
+                                               :raw (rest expression)
+                                               :first (first children)
+                                               :rest (make-instance
+                                                      'cst:atom-cst :raw nil))
+                          :source source))
           ;; Structure mismatch, try heuristic reconstruction.
           (t
            ;; We don't use
