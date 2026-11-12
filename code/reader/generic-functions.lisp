@@ -88,6 +88,13 @@
 ;;; avoid the cost of a generic function call. For any other client
 ;;; they call STATE-VALUE. Consequently, a method of STATE-VALUE that is
 ;;; specialized on NULL is not used by these functions.
+;;;
+;;; Letting other clients opt in to reading the variables, with a marker
+;;; class or a generic function, does not help: on SBCL the check costs
+;;; about as much as STATE-VALUE itself (3.1 ns for a generic function,
+;;; 4.6 ns for TYPEP of a class, 10 ns for a client that did not opt in,
+;;; against 3.9 ns), and with a marker class for lisp-case the cost of
+;;; reading its text did not change.
 (macrolet ((define (name aspect &key (variable aspect))
              `(progn
                 (declaim (inline ,name))
