@@ -3,6 +3,13 @@
 (defmethod eclector.readtable:readtablep ((readtable readtable))
   t)
 
+;;; Set the syntax type of CHAR in READTABLE. :CONSTITUENT is the
+;;; default, so it is represented by the absence of an entry.
+(defun set-syntax-type (readtable char syntax-type)
+  (if (eq syntax-type :constituent)
+      (remhash char (syntax-types readtable))
+      (setf (gethash char (syntax-types readtable)) syntax-type)))
+
 (defun parse-parameter-and-sub-char (stream)
   (loop for parameter = 0 then (+ (* 10 parameter) value)
         for parameter-given = nil then t
@@ -61,10 +68,9 @@
 
 (defmethod eclector.readtable:make-dispatch-macro-character
     ((readtable readtable) char &optional non-terminating-p)
-  (setf (gethash char (syntax-types readtable))
-        (if non-terminating-p
-            :non-terminating-macro
-            :terminating-macro))
+  (set-syntax-type readtable char (if non-terminating-p
+                                    :non-terminating-macro
+                                    :terminating-macro))
   (eclector.readtable:set-macro-character
    readtable char (make-dispatch-invoker readtable char) non-terminating-p)
   (setf (gethash char (dispatch-macro-characters readtable))
@@ -79,10 +85,9 @@
 
 (defmethod eclector.readtable:set-macro-character
     ((readtable readtable) char function &optional non-terminating-p)
-  (setf (gethash char (syntax-types readtable))
-        (if non-terminating-p
-            :non-terminating-macro
-            :terminating-macro))
+  (set-syntax-type readtable char (if non-terminating-p
+                                    :non-terminating-macro
+                                    :terminating-macro))
   (setf (gethash char (macro-characters readtable))
         function)
   t)
@@ -117,9 +122,7 @@
 
 (defmethod (setf eclector.readtable:syntax-type)
     (syntax-type (readtable readtable) char)
-  (if (eq syntax-type :constituent)
-      (remhash char (syntax-types readtable))
-      (setf (gethash char (syntax-types readtable)) syntax-type))
+  (set-syntax-type readtable char syntax-type)
   syntax-type)
 
 (defmethod eclector.readtable:copy-readtable-into
