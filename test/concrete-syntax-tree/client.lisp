@@ -218,3 +218,21 @@ presence of custom reader macros that bypass some reader functionality."
          (argument (cst:first (cst:rest result))))
     (is (null (cst:source (cst:first result))))
     (is (equal '(2 . 7) (cst:source (cst:first argument))))))
+
+;;; Test customizing reader state in a CST client
+
+(defclass read-base-cst-client (eclector.concrete-syntax-tree:cst-client)
+  ())
+
+(defmethod eclector.reader:state-value
+    ((client read-base-cst-client) (aspect (eql '*read-base*)))
+  16)
+
+(test state-value/cst-client
+  "A CST client can customize the reader state."
+  (let* ((client (make-instance 'read-base-cst-client))
+         (result (let ((eclector.base:*client* client))
+                   (eclector.concrete-syntax-tree:read-from-string "(10 z)"))))
+    (is (equal* '(16 z) (cst:raw result)))
+    (is (eql 10 (cst:raw (cst:first (eclector.concrete-syntax-tree:read-from-string
+                                     "(10 z)")))))))
