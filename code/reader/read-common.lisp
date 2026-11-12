@@ -54,6 +54,11 @@
       (let ((readtable (state-value client 'cl:*readtable*)))
         (skip-whitespace input-stream readtable)))))
 
+;;; READ-MAYBE-NOTHING may return any number of values after the object
+;;; and the kind, so they are collected in a list. Receiving them with
+;;; MULTIPLE-VALUE-CALL and a stack allocated &rest parameter instead
+;;; consed more (1.2% more bytes reading the Eclector sources, 7% more
+;;; for nested lists) and was not faster. Measure before changing this.
 (defmethod read-common (client input-stream eof-error-p eof-value)
   (loop for (value what . rest) = (multiple-value-list
                                    (read-maybe-nothing
