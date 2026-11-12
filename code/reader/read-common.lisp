@@ -25,7 +25,7 @@
         ;; be faster than repeating `cl:peek-char' and `cl:read-char'.
         ;; Looking up the syntax type is relatively slow so we do it
         ;; only once for runs of identical characters.
-        (loop with readtable = (state-value *client* 'cl:*readtable*)
+        (loop with readtable = (state-value/readtable *client*)
               for previous of-type (or null character) = nil then char
               for char = (cl:read-char input-stream nil input-stream recursive-p)
               while (and (not (eq char input-stream))

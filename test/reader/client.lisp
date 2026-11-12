@@ -496,3 +496,32 @@
            (is (eql 3  (eclector.reader:state-value nil '*read-base*)))
            (is (eql 10 (eclector.reader::state-value/read-base nil))))
       (remove-method #'eclector.reader:state-value method))))
+
+;;; Test that the reader uses the reader state of the client
+
+(defclass override-client ()
+  ((%readtable :initarg :readtable :initform nil :reader override-readtable)
+   (%suppress  :initarg :suppress  :initform nil :reader override-suppress)))
+
+(defmethod eclector.reader:state-value
+    ((client override-client) (aspect (eql 'cl:*readtable*)))
+  (or (override-readtable client) eclector.reader:*readtable*))
+
+(defmethod eclector.reader:state-value
+    ((client override-client) (aspect (eql '*read-suppress*)))
+  (override-suppress client))
+
+(defun make-x-whitespace-readtable ()
+  (let ((readtable (eclector.readtable:copy-readtable
+                    eclector.reader:*readtable*)))
+    (setf (eclector.readtable:syntax-type readtable #\x) :whitespace)
+    readtable))
+
+(test peek-char/client-readtable
+  "PEEK-CHAR uses the readtable of the client."
+  (let ((eclector.base:*client*
+          (make-instance 'override-client
+                         :readtable (make-x-whitespace-readtable))))
+    (with-input-from-string (stream "xxy")
+      (is (eql #\y (eclector.reader:peek-char t stream)))
+      (is (eql 2 (file-position stream))))))
