@@ -29,6 +29,13 @@
               '(simple-array character 1)))
    t))
 
+;;; A token is copied once, when FINALIZE makes the exact-size string. For
+;;; the Eclector sources that is 29% of the bytes consed for plain symbols
+;;; and 3% for qualified ones, but only 0.3% for numbers, and a symbol
+;;; needs a string for its name anyway. Passing a buffer and a range to
+;;; READ-TOKEN and INTERPRET-TOKEN instead would only save the copies for
+;;; numbers and break methods on those functions, so it is not done.
+;;;
 ;;; This macro binds the names PUSH-CHAR, {START,END}-ESCAPE and
 ;;; FINALIZE to local functions that perform the accumulation of token
 ;;; characters and, optionally, escape ranges. If LAZY is true, the
