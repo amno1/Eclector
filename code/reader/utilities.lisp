@@ -50,7 +50,13 @@
                              (setf token (make-array 10 :element-type 'character)))))
                       ((let ((length (length token)))
                          (unless (< index length)
-                           (setf token (adjust-array token (* 2 length)))))))
+                           ;; Allocate and copy instead of ADJUST-ARRAY,
+                           ;; which is much slower and may return a
+                           ;; non-simple array.
+                           (let ((new (make-array (* 2 length)
+                                                  :element-type 'character)))
+                             (replace new token)
+                             (setf token new))))))
                 (setf (aref token index) char)
                 (incf index)
                 char)
