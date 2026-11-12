@@ -36,6 +36,14 @@
 ;;; READ-TOKEN and INTERPRET-TOKEN instead would only save the copies for
 ;;; numbers and break methods on those functions, so it is not done.
 ;;;
+;;; Interning from the buffer with SB-INT:%INTERN, which takes a string
+;;; and a length, would avoid the copy for symbols too, but READ-TOKEN
+;;; would have to make the symbol, bypassing INTERPRET-TOKEN and the
+;;; methods that clients define on it, and it would use an internal
+;;; function of one implementation. Case conversion has the same
+;;; problem: it is done in INTERPRET-TOKEN, and removing it measured no
+;;; faster for plain symbols.
+;;;
 ;;; This macro binds the names PUSH-CHAR, {START,END}-ESCAPE and
 ;;; FINALIZE to local functions that perform the accumulation of token
 ;;; characters and, optionally, escape ranges. If LAZY is true, the
