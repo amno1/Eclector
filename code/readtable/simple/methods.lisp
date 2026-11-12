@@ -6,6 +6,8 @@
 ;;; Set the syntax type of CHAR in READTABLE. :CONSTITUENT is the
 ;;; default, so it is represented by the absence of an entry.
 (defun set-syntax-type (readtable char syntax-type)
+  (when (< (char-code char) 128)
+    (setf (svref (ascii-syntax-types readtable) (char-code char)) nil))
   (if (eq syntax-type :constituent)
       (remhash char (syntax-types readtable))
       (setf (gethash char (syntax-types readtable)) syntax-type)))
@@ -117,8 +119,15 @@
     (setf (gethash sub-char subtable) function)))
 
 (defmethod eclector.readtable:syntax-type ((readtable readtable) char)
-  (let ((type (gethash char (syntax-types readtable))))
-    (if (null type) :constituent type)))
+  (flet ((lookup ()
+           (or (gethash char (syntax-types readtable)) :constituent)))
+    (declare (inline lookup))
+    (let ((code (char-code char)))
+      (if (< code 128)
+          (let ((cache (ascii-syntax-types readtable)))
+            (or (svref cache code)
+                (setf (svref cache code) (lookup))))
+          (lookup)))))
 
 (defmethod (setf eclector.readtable:syntax-type)
     (syntax-type (readtable readtable) char)
@@ -128,6 +137,7 @@
 (defmethod eclector.readtable:copy-readtable-into
     ((from-readtable readtable) (to-readtable readtable))
   (clrhash (syntax-types to-readtable))
+  (fill (ascii-syntax-types to-readtable) nil)
   (clrhash (macro-characters to-readtable))
   (maphash (lambda (key value)
              (setf (gethash key (syntax-types to-readtable)) value))
