@@ -32,17 +32,21 @@
 ;;; This macro binds the names PUSH-CHAR, {START,END}-ESCAPE and
 ;;; FINALIZE to local functions that perform the accumulation of token
 ;;; characters and, optionally, escape ranges. If LAZY is true, the
-;;; array of token characters is allocated lazily.
+;;; array of token characters is allocated lazily. Otherwise the
+;;; initial array is stack-allocated: most tokens are short, so they
+;;; need no heap-allocated buffer at all, only the exact-size copy made
+;;; by FINALIZE (which never returns the stack-allocated array).
 (defmacro with-token-info
     ((push-char (&optional start-escape end-escape) finalize &key lazy)
      &body body)
-  `(let ((token ,(if lazy
-                     'nil
-                     '(make-array 10 :element-type 'character)))
-         (index 0)
-         ,@(when start-escape
-             `((escape-ranges '()))))
-     (declare (type ,(if lazy '(or null token-string) 'token-string) token)
+  `(let* (,@(unless lazy
+              `((initial-token (make-array 32 :element-type 'character))))
+          (token ,(if lazy 'nil 'initial-token))
+          (index 0)
+          ,@(when start-escape
+              `((escape-ranges '()))))
+     (declare ,@(unless lazy `((dynamic-extent initial-token)))
+              (type ,(if lazy '(or null token-string) 'token-string) token)
               (type array-index index))
      (labels ((,push-char (char)
                 (cond ,@(when lazy
@@ -68,7 +72,8 @@
                   `((,end-escape ()
                       (setf (cdr (first escape-ranges)) index))))
               (,finalize ()
-                (values (if (= index (length token))
+                (values (if (and (= index (length token))
+                                 ,@(unless lazy `((not (eq token initial-token)))))
                             token
                             (subseq token 0 index))
                         ,@(when start-escape
