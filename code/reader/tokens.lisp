@@ -162,6 +162,11 @@
 
 (defmethod interpret-token
     ((client t) (input-stream t) (token t) (escape-ranges t))
+  ;; Using STATE-VALUE/READ-BASE and STATE-VALUE/READTABLE here (and
+  ;; STATE-VALUE/PACKAGE in INTERPRET-SYMBOL) measured 1-2% slower on
+  ;; reading the Eclector sources (two runs; a control with an unused
+  ;; function added was flat), so the generic function is called. Measure
+  ;; again before changing this.
   (let ((read-base (state-value client '*read-base*))
         (readtable (state-value client 'cl:*readtable*)))
     (convert-according-to-readtable-case readtable token escape-ranges)

@@ -501,7 +501,9 @@
 
 (defclass override-client ()
   ((%readtable :initarg :readtable :initform nil :reader override-readtable)
-   (%suppress  :initarg :suppress  :initform nil :reader override-suppress)))
+   (%suppress  :initarg :suppress  :initform nil :reader override-suppress)
+   (%read-base :initarg :read-base :initform 10  :reader override-read-base)
+   (%package   :initarg :package   :initform nil :reader override-package)))
 
 (defmethod eclector.reader:state-value
     ((client override-client) (aspect (eql 'cl:*readtable*)))
@@ -510,6 +512,14 @@
 (defmethod eclector.reader:state-value
     ((client override-client) (aspect (eql '*read-suppress*)))
   (override-suppress client))
+
+(defmethod eclector.reader:state-value
+    ((client override-client) (aspect (eql '*read-base*)))
+  (override-read-base client))
+
+(defmethod eclector.reader:state-value
+    ((client override-client) (aspect (eql '*package*)))
+  (or (override-package client) *package*))
 
 (defun make-x-whitespace-readtable ()
   (let ((readtable (eclector.readtable:copy-readtable
@@ -556,3 +566,23 @@
   (let ((client (make-instance 'override-client :suppress t)))
     (with-input-from-string (stream "foo")
       (is (null (eclector.reader:read-token client stream t nil))))))
+
+(test interpret-token/client-read-base
+  "INTERPRET-TOKEN uses the value of *READ-BASE* of the client."
+  (let ((eclector.base:*client* (make-instance 'override-client :read-base 16)))
+    (is (eql 16 (eclector.reader:read-from-string "10")))))
+
+(test interpret-token/client-readtable
+  "INTERPRET-TOKEN uses the readtable of the client."
+  (let ((readtable (eclector.readtable:copy-readtable
+                    eclector.reader:*readtable*)))
+    (setf (eclector.readtable:readtable-case readtable) :preserve)
+    (let ((eclector.base:*client*
+            (make-instance 'override-client :readtable readtable)))
+      (is (string= "foo" (symbol-name (eclector.reader:read-from-string "foo")))))))
+
+(test interpret-symbol/client-package
+  "INTERPRET-SYMBOL uses the value of *PACKAGE* of the client."
+  (let ((eclector.base:*client*
+          (make-instance 'override-client :package (find-package '#:keyword))))
+    (is (eq :foo (eclector.reader:read-from-string "foo")))))
