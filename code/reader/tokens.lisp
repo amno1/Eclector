@@ -18,14 +18,14 @@
                 :delimiter delimiter :report 'use-partial-symbol))
              (terminate-token ()
                (return-from read-token
-                 (cond ((state-value client '*read-suppress*)
+                 (cond ((state-value/read-suppress client)
                         (note-skipped-input client input-stream
                                             (or *skip-reason* '*read-suppress*))
                         nil)
                        (t
                         (multiple-value-bind (token escape-ranges) (finalize)
                           (interpret-token client input-stream token escape-ranges)))))))
-      (let ((readtable (state-value client 'cl:*readtable*)))
+      (let ((readtable (state-value/readtable client)))
         (token-state-machine
          input-stream readtable handle-char start-escape end-escape
          unterminated-single-escape unterminated-multiple-escape

@@ -543,3 +543,16 @@
           (eclector.reader:read-maybe-nothing client stream t nil)
         (is (null object))
         (is (eq :suppress what))))))
+
+(test read-token/client-readtable
+  "READ-TOKEN uses the readtable of the client."
+  (let ((eclector.base:*client*
+          (make-instance 'override-client
+                         :readtable (make-x-whitespace-readtable))))
+    (is (eq 'ab (eclector.reader:read-from-string "abxcd")))))
+
+(test read-token/client-suppress
+  "READ-TOKEN uses the value of *READ-SUPPRESS* of the client."
+  (let ((client (make-instance 'override-client :suppress t)))
+    (with-input-from-string (stream "foo")
+      (is (null (eclector.reader:read-token client stream t nil))))))

@@ -236,3 +236,20 @@ presence of custom reader macros that bypass some reader functionality."
     (is (equal* '(16 z) (cst:raw result)))
     (is (eql 10 (cst:raw (cst:first (eclector.concrete-syntax-tree:read-from-string
                                      "(10 z)")))))))
+
+(defclass readtable-cst-client (eclector.concrete-syntax-tree:cst-client)
+  ((%readtable :initarg :readtable :reader client-readtable)))
+
+(defmethod eclector.reader:state-value
+    ((client readtable-cst-client) (aspect (eql 'cl:*readtable*)))
+  (client-readtable client))
+
+(test state-value/cst-client-readtable
+  "A CST client can provide the readtable."
+  (let* ((readtable (eclector.readtable:copy-readtable
+                     eclector.reader:*readtable*))
+         (client (make-instance 'readtable-cst-client :readtable readtable)))
+    (setf (eclector.readtable:syntax-type readtable #\x) :whitespace)
+    (let ((result (let ((eclector.base:*client* client))
+                    (eclector.concrete-syntax-tree:read-from-string "(a x b)"))))
+      (is (equal* '(a b) (cst:raw result))))))
