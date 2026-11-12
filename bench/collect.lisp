@@ -1,0 +1,40 @@
+;;;; Collecting the timings: *SETS* x *RUNS* runs of both checkouts.
+
+(defun summarize (entry)
+  "Median bytes, GC%, forms and GC count over all runs of one case."
+  (list (median (first entry)) (median (second entry)) (third entry)
+        (median (fourth entry))))
+
+(defun collect-timings (before after)
+  "Return (values SET-MINIMA INFO NAMES): per set the minimum time of each case,
+the other measurements of every run, and the case names."
+  (let ((dirs (list (cons :before before) (cons :after after)))
+        (set-minima (list (cons :before '()) (cons :after '())))
+        (info (make-hash-table :test 'equal)) ; (which . name) -> (bytes gc forms gcs)
+        (names '()))
+    (dotimes (s *sets*)
+      (let ((runs (list (cons :before '()) (cons :after '()))))
+        (dotimes (r *runs*)
+          (format *error-output* "  set ~D/~D run ~D/~D~%" (1+ s) *sets* (1+ r) *runs*)
+          (dolist (which (if (evenp (+ s r)) '(:before :after) '(:after :before)))
+            (let ((rows (run-cases (cdr (assoc which dirs)))))
+              (setf names (mapcar #'first rows))
+              (push rows (cdr (assoc which runs)))
+              (dolist (row rows)
+                (let ((entry (or (gethash (cons which (first row)) info)
+                                 (setf (gethash (cons which (first row)) info)
+                                       (list nil nil nil nil)))))
+                  (push (num (fourth row)) (first entry))
+                  (push (num (fifth row)) (second entry))
+                  (push (num (seventh row)) (fourth entry))
+                  (setf (third entry) (sixth row)))))))
+        (dolist (which '(:before :after))
+          (push (let ((minima (make-hash-table :test 'equal)))
+                  (dolist (name names minima)
+                    (setf (gethash name minima)
+                          (reduce #'min
+                                  (mapcar (lambda (rows)
+                                            (num (second (assoc name rows :test #'string=))))
+                                          (cdr (assoc which runs)))))))
+                (cdr (assoc which set-minima))))))
+    (values set-minima info names)))
