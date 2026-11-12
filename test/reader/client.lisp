@@ -450,3 +450,49 @@
                       (make-instance 'annotating-custom-labeled-objects-client)))
                 (eclector.reader:read-from-string
                  "(A #1=(b #1# c #1# d) e #1# f)")))))
+
+;;; Test the functions for reading standard aspects
+
+(defclass state-value-helper-client () ())
+
+(macrolet ((define (aspect value)
+             `(defmethod eclector.reader:state-value
+                  ((client state-value-helper-client) (aspect (eql ',aspect)))
+                ,value)))
+  (define cl:*readtable* :custom-readtable)
+  (define *read-suppress* :custom-suppress)
+  (define *read-base* 16)
+  (define *package* :custom-package))
+
+(test state-value-helpers/default-client
+  "For the default client the functions return the variables' values."
+  (let ((eclector.reader:*readtable* :readtable)
+        (*read-suppress* :suppress)
+        (*read-base* 8)
+        (*package* (find-package '#:keyword)))
+    (is (eq :readtable (eclector.reader::state-value/readtable nil)))
+    (is (eq :suppress  (eclector.reader::state-value/read-suppress nil)))
+    (is (eql 8         (eclector.reader::state-value/read-base nil)))
+    (is (eq (find-package '#:keyword)
+            (eclector.reader::state-value/package nil)))))
+
+(test state-value-helpers/custom-client
+  "For other clients the functions return the values of STATE-VALUE."
+  (let ((client (make-instance 'state-value-helper-client)))
+    (is (eq :custom-readtable
+            (eclector.reader::state-value/readtable client)))
+    (is (eq :custom-suppress
+            (eclector.reader::state-value/read-suppress client)))
+    (is (eql 16 (eclector.reader::state-value/read-base client)))
+    (is (eq :custom-package (eclector.reader::state-value/package client)))))
+
+(test state-value-helpers/null-method
+  "The functions do not use a method of STATE-VALUE specialized on NULL."
+  (let ((method (eval '(defmethod eclector.reader:state-value
+                           ((client null) (aspect (eql '*read-base*)))
+                         3))))
+    (unwind-protect
+         (let ((*read-base* 10))
+           (is (eql 3  (eclector.reader:state-value nil '*read-base*)))
+           (is (eql 10 (eclector.reader::state-value/read-base nil))))
+      (remove-method #'eclector.reader:state-value method))))
