@@ -37,6 +37,12 @@ sbcl --script bench/3x3.lisp /tmp/before $PWD bench/3x3-NAME.txt
   the set minima relative to the median; a ratio inside its spread means
   nothing. `KB` (consed per corpus pass), `gc%` (share of wall time in GC)
   and `GCs` (number of collections) are medians over all 9 runs.
+* A warm-up of 1.5 s reads `source` before the first case: without it the
+  first cases of a process run while the CPU is still ramping up and show
+  40-50% spread.
+* ASDF compares file times in whole seconds. After editing a source file,
+  `touch` it (or build with `--force`) before an A/B run, or a stale build
+  may be measured; the same goes for the test suite.
 * Environment: `LISP` (default `sbcl`), `SAMPLES` (15 per case), `TARGET_MS`
   (25, wall time of one sample), `ONLY=text` (case-name filter).
 

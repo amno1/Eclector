@@ -11,7 +11,7 @@ a fresh process otherwise run while the clock is still ramping up."
     (loop while (< (now-seconds) end) do (read-base string))))
 
 (defun main ()
-  (unless *xcheck* (warm-up 0.7d0))
+  (unless *xcheck* (warm-up 1.5d0))
   (loop for (reader-name reader read-one raw) in *readers*
         do (loop for (corpus-name . string) in *corpora*
                  for name = (case-name reader-name corpus-name)
