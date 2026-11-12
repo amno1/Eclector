@@ -39,3 +39,43 @@ sbcl --script bench/3x3.lisp /tmp/before $PWD bench/3x3-NAME.txt
   and `GCs` (number of collections) are medians over all 9 runs.
 * Environment: `LISP` (default `sbcl`), `SAMPLES` (15 per case), `TARGET_MS`
   (25, wall time of one sample), `ONLY=text` (case-name filter).
+
+## Cases for the GC
+
+On the corpora above GC is under 1% of the time, so less consing does not
+show. The `gc` cases read `source` 400 times in a row as one timed run and
+report the time per pass including GC:
+
+* `sustained`: nothing is kept.
+* `retained`: the results of the last 20 passes stay alive.
+* `sustained 8MB`: as `sustained`, with `bytes-consed-between-gcs` set to
+  8 MB, so that there are many more collections.
+
+Select them with `ONLY="gc "`.
+
+## Output identity
+
+Before timing, `3x3.lisp` runs `cases.lisp` with `XCHECK=1` on both sides:
+an MD5 of the printed results (`raw` of the CST for the CST reader) for every
+case. The line `output: identical` must be there; otherwise a speed-up is
+not a speed-up. The same check by hand:
+
+```
+ECLECTOR_DIR=$PWD XCHECK=1 sbcl --noinform --non-interactive --no-userinit --load bench/cases.lisp
+```
+
+The base and CST reader must print the same digest for the same corpus. The
+`sbcl` rows differ from them for `quote` and `source` (SBCL reads backquote
+into its own representation), so only the digests of the same row on the two
+checkouts are compared.
+
+## Controls
+
+1. **Identical copy**: compare a checkout with a `git archive` copy of itself.
+   Ratios must be 1.00 +- spread. If not, fix the measurement first.
+2. **Dummy function**: add a never-called function near the changed code to a
+   copy of the old checkout; a "regression" that shows up there too is image
+   layout, not the change.
+
+See `~/repos/cl/cl-emacs/el-fmt/bench/METHODOLOGY.md` for the reasons (two
+machine speeds, layout noise of 4-10 %).
