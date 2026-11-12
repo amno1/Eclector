@@ -95,6 +95,12 @@
 ;;; 4.6 ns for TYPEP of a class, 10 ns for a client that did not opt in,
 ;;; against 3.9 ns), and with a marker class for lisp-case the cost of
 ;;; reading its text did not change.
+;;;
+;;; The only way known to make this cheaper for other clients is to get
+;;; several aspects with one call, as the readtable and *READ-SUPPRESS*
+;;; are both needed for most tokens. That needs a new generic function and
+;;; a rule for when the values go stale, because a reader macro can change
+;;; the readtable in the middle of a read. It has not been tried.
 (macrolet ((define (name aspect &key (variable aspect))
              `(progn
                 (declaim (inline ,name))
