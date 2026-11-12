@@ -65,6 +65,12 @@
 
 ;;; Skip over whitespace and comments until either CLOSE-CHAR is
 ;;; encountered or an object can be read.
+;;;
+;;; PEEK-CHAR looks like a redundant read of the next character, but
+;;; leaving it out and letting the reader macro for the closing
+;;; parenthesis signal END-OF-LIST measured the same for nested lists and
+;;; 5% slower for the Eclector sources. It would also stop recognizing
+;;; CLOSE-CHAR when the readtable gives it another meaning.
 (defun %read-list-element (client stream close-char)
   ;; Note that calling PEEK-CHAR this way skips over whitespace but
   ;; not comments.
