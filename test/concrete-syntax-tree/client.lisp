@@ -162,3 +162,40 @@ presence of custom reader macros that bypass some reader functionality."
        (print (quote (member :floor :ceiling))))
       ("(print (quote #1=(member #1# :ceiling)))"
        (print (quote #1=(member #1# :ceiling)))))))
+
+;;; Test CSTs for wrapper forms like (quote x)
+
+(defclass counting-cst-client (eclector.concrete-syntax-tree:cst-client)
+  ((%reconstructions :accessor reconstructions :initform 0)))
+
+(defmethod cst:reconstruct :before
+    ((client counting-cst-client) expression (cst t) &key &allow-other-keys)
+  (incf (reconstructions client)))
+
+(defun read-counting-reconstructions (input)
+  (let* ((client (make-instance 'counting-cst-client))
+         (result (let ((eclector.base:*client* client))
+                   (eclector.concrete-syntax-tree:read-from-string input))))
+    (is-true (valid-cst-parse-result-p client result))
+    (is-consistent-with-raw result)
+    (is (equal* (eclector.reader:read-from-string input) (cst:raw result)))
+    (values result (reconstructions client))))
+
+(test wrapper-forms/structure
+  "Check the CST for a wrapper form."
+  (let* ((result (read-counting-reconstructions "'x"))
+         (rest   (cst:rest result)))
+    (is (equal '(0 . 2) (cst:source result)))
+    (is (eq 'quote (cst:raw (cst:first result))))
+    (is (equal '(x) (cst:raw rest)))
+    (is (equal '(1 . 2) (cst:source (cst:first rest))))
+    (is (null (cst:raw (cst:rest rest))))))
+
+(test wrapper-forms/fallback
+  "Forms that are not wrapper forms still use reconstruction."
+  (dolist (input '("(a b . c)" "'quote"))
+    (multiple-value-bind (result reconstructions)
+        (read-counting-reconstructions input)
+      (declare (ignore result))
+      (is (plusp reconstructions)
+          "~@<For input ~S, RECONSTRUCT was not called.~@:>" input))))
