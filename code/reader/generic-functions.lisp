@@ -82,6 +82,25 @@
   (define *quasiquotation-depth*      :type (integer 0))
   (define *consing-dot-allowed-p*     :type symbol))
 
+;;; Functions for reading the value of a standard aspect. The default
+;;; methods of STATE-VALUE return the value of a variable, so for the
+;;; default client NIL these functions read the variable directly and
+;;; avoid the cost of a generic function call. For any other client
+;;; they call STATE-VALUE. Consequently, a method of STATE-VALUE that is
+;;; specialized on NULL is not used by these functions.
+(macrolet ((define (name aspect &key (variable aspect))
+             `(progn
+                (declaim (inline ,name))
+                (defun ,name (client)
+                  (if (null client)
+                      ,variable
+                      (state-value client ',aspect))))))
+  (define state-value/readtable cl:*readtable*
+    :variable eclector.reader:*readtable*)
+  (define state-value/read-suppress *read-suppress*)
+  (define state-value/read-base *read-base*)
+  (define state-value/package *package*))
+
 ;;; Evaluate BODY in the context of CALL-WITH-STATE-VALUE calls for
 ;;; all aspect-value pairs in BINDINGS.
 (defmacro with-state-values ((client &rest bindings) &body body)
