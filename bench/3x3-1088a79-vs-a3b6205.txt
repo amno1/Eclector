@@ -1,0 +1,50 @@
+Eclector, 3 sets x 3 runs: median of the per-set minimum (us per corpus pass)
+before: 1088a79 (0.13 release, documentation)
+after:  a3b6205 (token buffer, syntax-type cache, CST wrapper forms, state-value helpers)
+output: identical
+
+case                           before      after   ratio   KB before   KB after  gc% B  gc% A  GCs B  GCs A  spread%
+sbcl symbols                    203.5      204.7   0.99x        35.1       35.1    0.0    0.0      1      1     49.4
+sbcl qualified                  187.3      188.6   0.99x        21.1       21.1    0.0    0.0      1      1     41.4
+sbcl numbers                    180.4      180.2   1.00x        86.7       86.7    0.7    0.7      3      3      1.7
+sbcl strings                    106.0      105.8   1.00x       126.5      126.5    1.6    1.7      6      6      1.4
+sbcl characters                 201.1      202.4   0.99x        43.0       43.0    0.3    0.3      2      2      1.8
+sbcl nested                     173.5      173.5   1.00x        68.0       68.0    0.4    0.4      2      2      0.9
+sbcl sharpsign                  278.7      277.9   1.00x        89.0       89.0    0.4    0.4      2      2      0.9
+sbcl quote                      198.6      200.4   0.99x       112.4      112.4    0.7    0.7      3      3      2.1
+sbcl comments                   110.9      112.2   0.99x        18.7       18.7    0.0    0.0      1      1      1.6
+sbcl source                    1859.8     1877.2   0.99x       374.4      374.4    0.0    0.0      1      1      1.2
+base symbols                    865.6      700.1   1.24x       332.5      161.4    0.3    0.3      2      2      2.0
+base qualified                  727.6      572.5   1.27x       353.5      215.5    0.7    0.4      3      2      2.0
+base numbers                    838.2      701.5   1.19x       552.5      400.5    1.0    0.7      4      3      3.5
+base strings                    588.8      452.8   1.30x       627.7      627.8    1.5    1.8      6      7      2.5
+base characters                 687.8      613.7   1.12x       222.4      222.5    0.4    0.4      2      2      1.4
+base nested                    1231.0     1019.4   1.21x       606.6      409.8    0.7    0.4      3      2      1.9
+base sharpsign                 1340.7     1171.9   1.14x       671.5      531.1    0.7    0.7      3      3      2.0
+base quote                     1186.3     1021.5   1.16x       538.6      407.4    0.7    0.4      3      2      1.2
+base comments                   561.8      486.6   1.15x       237.3      162.3    0.4    0.3      2      2      2.5
+base source                    6518.8     5347.8   1.22x      2728.9     1707.9    0.7    0.3      3      2      1.4
+cst symbols                    1109.4      983.0   1.13x       812.5      641.3    1.0    1.0      4      4      1.5
+cst qualified                   903.5      776.4   1.16x       658.0      519.5    1.0    1.0      4      4      1.7
+cst numbers                    1043.6      940.4   1.11x       973.8      822.0    1.3    1.3      5      5      0.7
+cst strings                     704.9      590.5   1.19x       814.9      815.0    1.6    1.8      6      7      1.8
+cst characters                  985.3      936.3   1.05x       827.4      827.2    1.2    1.3      5      5      0.8
+cst nested                     2992.4     2871.5   1.04x      2866.0     2669.9    1.2    1.3      5      5      1.7
+cst sharpsign                  1840.1     1669.3   1.10x      1593.9     1203.4    1.4    1.0      5      4      1.1
+cst quote                      4059.3     1900.6   2.14x      6195.7     1770.0    2.2    1.3      9      5      1.1
+cst comments                    903.3      851.8   1.06x       627.7      552.4    1.0    1.0      4      4      0.6
+cst source                    10157.7     8202.0   1.24x      8279.0     5567.1    1.1    1.1      5      5      1.2
+gc base source sustained       6644.9     5405.8   1.23x      2734.8     1713.3    1.1    0.8     21     14      0.9
+gc base source retained        6992.8     5623.0   1.24x      2734.8     1713.2    5.9    4.6     21     14      0.8
+gc base source sustained 8MB     6970.4     5566.5   1.25x      2731.1     1701.7    4.9    4.0    133     83      1.1
+gc cst source sustained       11416.5     8997.8   1.27x      8283.8     5574.0   10.1    7.9     64     43      0.9
+gc cst source retained        15890.8    13611.3   1.17x      8283.6     5573.6   35.3   38.8     64     43      0.7
+gc cst source sustained 8MB    14242.5    11498.8   1.24x      8238.6     5551.1   27.3   26.9    401    270      1.3
+
+ratio = before / after (above 1: faster). spread% = largest difference
+between the 3 set minima, relative to the median. KB and gc% = median over all 9 runs.
+
+Notes: SAMPLES=10. The sbcl rows read with SBCL's own reader, which did not
+change; the large spread of the first two (the first cases of each process) is
+the warm-up noise described in README.md. Against SBCL's reader, base source
+went from 3.50x to 2.85x and cst source from 5.46x to 4.37x.
