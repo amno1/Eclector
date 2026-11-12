@@ -586,3 +586,19 @@
   (let ((eclector.base:*client*
           (make-instance 'override-client :package (find-package '#:keyword))))
     (is (eq :foo (eclector.reader:read-from-string "foo")))))
+
+;;; Test additional values from READ-MAYBE-NOTHING
+
+(defclass extra-values-client () ())
+
+(defmethod eclector.reader:read-maybe-nothing :around
+    ((client extra-values-client) input-stream eof-error-p eof-value)
+  (multiple-value-bind (value what) (call-next-method)
+    (values value what :extra-1 :extra-2)))
+
+(test read-common/additional-values
+  "READ-COMMON returns additional values of READ-MAYBE-NOTHING."
+  (let ((eclector.base:*client* (make-instance 'extra-values-client)))
+    (with-input-from-string (stream "  foo")
+      (is (equal '(foo :extra-1 :extra-2)
+                 (multiple-value-list (eclector.reader:read stream)))))))
