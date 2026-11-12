@@ -1,5 +1,22 @@
 (:changes
- (:release "0.13" nil)
+ (:release "0.13" nil
+  (:item
+   (:paragraph
+    "The" "CST" "client" "now" "constructs" "the" "CSTs" "for" "wrapper" "forms"
+    "like" (:tt "(quote x)") "," "as" "produced" "by" "the" "quote" ","
+    "function" "," "backquote" "and" "comma" "reader" "macros" ","
+    "directly" "instead" "of" "calling"
+    (:symbol "concrete-syntax-tree:reconstruct") "." "The" "CST" "for" "the"
+    "operator" "is" "a" "new" "node" "without" "source" "and" "the" "CST" "for"
+    "the" "final" (:tt "nil") "is" "a" "new" "node" "." "Previously" ","
+    (:symbol "concrete-syntax-tree:reconstruct") "could" "use" "an" "unrelated"
+    "node" "from" "inside" "the" "argument" "for" "the" "operator" ","
+    "which" "could" "give" "the" "operator" "the" "source" "of" "an" "unrelated"
+    "token" "," "and" "shared" "the" "node" "for" "the" "final" (:tt "nil")
+    "between" "nested" "lists" "." "Code" "that" "inspects" "the" "source" "of"
+    "the" "operator" "of" "a" "wrapper" "form" "or" "compares" "CST" "nodes"
+    "with" (:symbol "eq") "may" "observe" "different" "results" "." "The" "raw"
+    "values" "are" "unchanged" ".")))
 
  (:release "0.12" "2026-08-11"
   (:item
